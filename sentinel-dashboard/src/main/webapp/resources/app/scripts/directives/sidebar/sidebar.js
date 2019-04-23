@@ -19,12 +19,22 @@ angular.module('sentinelDashboardApp')
         // app
         AppService.getApps().success(
           function (data) {
-            if (data.code == 0) {
-              var initHashApp = $location.path().split('/')[3];
+            if (data.code === 0) {
+              let initHashApp = $location.path().split('/')[3];
               $scope.apps = data.data;
-              $scope.apps.forEach(function (item) {
-                if (item.app == initHashApp) {
+              $scope.apps = $scope.apps.map(function (item) {
+                if (item.app === initHashApp) {
                   item.active = true;
+                }
+                var heathyCount = 0;
+                for (var i in item.machines) {
+                  if (item.machines[i].healthy) {
+                      heathyCount++;
+                  }
+                }
+                item.heathyCount = heathyCount;
+                if (item.shown) {
+                  return item;
                 }
               });
             }
@@ -33,22 +43,23 @@ angular.module('sentinelDashboardApp')
 
         // toggle side bar
         $scope.click = function ($event) {
-          var element = angular.element($event.target);
-          var entry = angular.element($event.target).scope().entry;
-          entry.active = !entry.active;
+          let entry = angular.element($event.target).scope().entry;
+          entry.active = !entry.active;// toggle this clicked app bar
 
-          if (entry.active == false) {
-            element.parent().children('ul').hide();
-          } else {
-            element.parent().parent().children('li').children('ul').hide();
-            element.parent().children('ul').show();
-          }
-        }
+          $scope.apps.forEach(function (item) {// collapse other app bars
+            if (item != entry) {
+              item.active = false;
+            }
+          });
+        };
 
+        /**
+         * @deprecated
+         */
         $scope.addSearchApp = function () {
-          var findApp = false;
-          for (var i = 0; i < $scope.apps.length; i++) {
-            if ($scope.apps[i].app == $scope.searchApp) {
+          let findApp = false;
+          for (let i = 0; i < $scope.apps.length; i++) {
+            if ($scope.apps[i].app === $scope.searchApp) {
               findApp = true;
               break;
             }
@@ -56,7 +67,7 @@ angular.module('sentinelDashboardApp')
           if (!findApp) {
             $scope.apps.push({ app: $scope.searchApp });
           }
-        }
+        };
       }
-    }
+    };
   }]);

@@ -19,19 +19,38 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * Metrics data for a specific resource at given {@code timestamp}.
+ *
+ * @author jialiang.linjl
+ * @author Carpenter Lee
+ */
 public class MetricNode {
 
     private long timestamp;
-    private long passedQps;
-    private long blockedQps;
+    private long passQps;
+    private long blockQps;
     private long successQps;
-    private long exception;
+    private long exceptionQps;
     private long rt;
+
+    /**
+     * @since 1.5.0
+     */
+    private long occupiedPassQps;
 
     private String resource;
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public long getOccupiedPassQps() {
+        return occupiedPassQps;
+    }
+
+    public void setOccupiedPassQps(long occupiedPassQps) {
+        this.occupiedPassQps = occupiedPassQps;
     }
 
     public void setTimestamp(long timestamp) {
@@ -46,28 +65,28 @@ public class MetricNode {
         this.successQps = successQps;
     }
 
-    public long getPassedQps() {
-        return passedQps;
+    public long getPassQps() {
+        return passQps;
     }
 
-    public void setPassedQps(long passedQps) {
-        this.passedQps = passedQps;
+    public void setPassQps(long passQps) {
+        this.passQps = passQps;
     }
 
-    public long getException() {
-        return exception;
+    public long getExceptionQps() {
+        return exceptionQps;
     }
 
-    public void setException(long exception) {
-        this.exception = exception;
+    public void setExceptionQps(long exceptionQps) {
+        this.exceptionQps = exceptionQps;
     }
 
-    public long getBlockedQps() {
-        return blockedQps;
+    public long getBlockQps() {
+        return blockQps;
     }
 
-    public void setBlockedQps(long blockedQps) {
-        this.blockedQps = blockedQps;
+    public void setBlockQps(long blockQps) {
+        this.blockQps = blockQps;
     }
 
     public long getRt() {
@@ -88,22 +107,17 @@ public class MetricNode {
 
     @Override
     public String toString() {
-        return "MetricNode{" +
-            "timestamp=" + timestamp +
-            ", passedQps=" + passedQps +
-            ", blockedQs=" + blockedQps +
-            ", successQps=" + successQps +
-            ", exception=" + exception +
-            ", rt=" + rt +
-            ", resource='" + resource + '\'' +
-            '}';
+        return "MetricNode{" + "timestamp=" + timestamp + ", passQps=" + passQps + ", blockQps=" + blockQps
+            + ", successQps=" + successQps + ", exceptionQps=" + exceptionQps + ", rt=" + rt
+            + ", occupiedPassQps=" + occupiedPassQps + ", resource='"
+            + resource + '\'' + '}';
     }
 
     /**
-     * To formatting string. All "|" in {@link #resource} will be replaced with "_", format is:
-     * <br/>
+     * To formatting string. All "|" in {@link #resource} will be replaced with
+     * "_", format is: <br/>
      * <code>
-     * timestamp|resource|passedQps|blockedQps|successQps|exception|rt
+     * timestamp|resource|passQps|blockQps|successQps|exceptionQps|rt|occupiedPassQps
      * </code>
      *
      * @return string format of this.
@@ -113,16 +127,17 @@ public class MetricNode {
         sb.append(timestamp).append("|");
         String legalName = resource.replaceAll("\\|", "_");
         sb.append(legalName).append("|");
-        sb.append(passedQps).append("|");
-        sb.append(blockedQps).append("|");
+        sb.append(passQps).append("|");
+        sb.append(blockQps).append("|");
         sb.append(successQps).append("|");
-        sb.append(exception).append("|");
-        sb.append(rt);
+        sb.append(exceptionQps).append("|");
+        sb.append(rt).append("|");
+        sb.append(occupiedPassQps);
         return sb.toString();
     }
 
     /**
-     * Parse {@link MetricNode} from thin string, see {@link #toThinString()} ()}
+     * Parse {@link MetricNode} from thin string, see {@link #toThinString()}
      *
      * @param line
      * @return
@@ -132,19 +147,22 @@ public class MetricNode {
         String[] strs = line.split("\\|");
         node.setTimestamp(Long.parseLong(strs[0]));
         node.setResource(strs[1]);
-        node.setPassedQps(Long.parseLong(strs[2]));
-        node.setBlockedQps(Long.parseLong(strs[3]));
+        node.setPassQps(Long.parseLong(strs[2]));
+        node.setBlockQps(Long.parseLong(strs[3]));
         node.setSuccessQps(Long.parseLong(strs[4]));
-        node.setException(Long.parseLong(strs[5]));
+        node.setExceptionQps(Long.parseLong(strs[5]));
         node.setRt(Long.parseLong(strs[6]));
+        if (strs.length == 8) {
+            node.setOccupiedPassQps(Long.parseLong(strs[7]));
+        }
         return node;
     }
 
     /**
-     * To formatting string. All "|" in {@link MetricNode#resource} will be replaced with "_", format is:
-     * <br/>
+     * To formatting string. All "|" in {@link MetricNode#resource} will be
+     * replaced with "_", format is: <br/>
      * <code>
-     * timestamp|yyyy-MM-dd HH:mm:ss|resource|passedQps|blockedQps|successQps|exception|rt\n
+     * timestamp|yyyy-MM-dd HH:mm:ss|resource|passQps|blockQps|successQps|exceptionQps|rt|occupiedPassQps\n
      * </code>
      *
      * @return string format of this.
@@ -157,11 +175,12 @@ public class MetricNode {
         sb.append(df.format(new Date(getTimestamp()))).append("|");
         String legalName = getResource().replaceAll("\\|", "_");
         sb.append(legalName).append("|");
-        sb.append(getPassedQps()).append("|");
-        sb.append(getBlockedQps()).append("|");
+        sb.append(getPassQps()).append("|");
+        sb.append(getBlockQps()).append("|");
         sb.append(getSuccessQps()).append("|");
-        sb.append(getException()).append("|");
-        sb.append(getRt());
+        sb.append(getExceptionQps()).append("|");
+        sb.append(getRt()).append("|");
+        sb.append(getOccupiedPassQps());
         sb.append('\n');
         return sb.toString();
     }
@@ -178,11 +197,14 @@ public class MetricNode {
         MetricNode node = new MetricNode();
         node.setTimestamp(time);
         node.setResource(strs[2]);
-        node.setPassedQps(Long.parseLong(strs[3]));
-        node.setBlockedQps(Long.parseLong(strs[4]));
+        node.setPassQps(Long.parseLong(strs[3]));
+        node.setBlockQps(Long.parseLong(strs[4]));
         node.setSuccessQps(Long.parseLong(strs[5]));
-        node.setException(Long.parseLong(strs[6]));
+        node.setExceptionQps(Long.parseLong(strs[6]));
         node.setRt(Long.parseLong(strs[7]));
+        if (strs.length == 9) {
+            node.setOccupiedPassQps(Long.parseLong(strs[8]));
+        }
         return node;
     }
 
